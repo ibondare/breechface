@@ -3,8 +3,8 @@ package main
 
 import (
   "encoding/json"
-  "github.com/oschwald/geoip2-golang"
   "github.com/ibondare/breechface/api/location/model"
+  "github.com/oschwald/geoip2-golang"
   "log"
   "net"
   "net/http"
@@ -27,29 +27,37 @@ func main() {
 }
 
 // /location/ip/{ipAddr} URI handler
+// Batching is supported with a comma separated list, e.g.:
+//   /location/ip/{ipAddr1},{ipAddr2},{ipAddr3}
 func ipLocationHandler(w http.ResponseWriter, r *http.Request) {
-  values := strings.Split(r.URL.Path, "/")
+  uriElements := strings.Split(r.URL.Path, "/")
+  target := uriElements[len(uriElements)-1]
 
-  target := values[len(values)-1]
+  if len(target) > 0 {
+    valueList := strings.Split(target, ",")
 
-  if target == "ip" {
-    log.Println("POST is unsupported")
-  } else {
-    // This is a GET with the IP address in the URI (/location/ip/ipAddr)
-    ip := net.ParseIP(target)
+    ipList := make([]net.IP, len(valueList))
 
-    if ip != nil {
-      countryData, err := model.LocateCountry(context, ip)
-      if err != nil {
-        log.Fatal(err)
+    var ip net.IP
+
+    for i, rawValue := range valueList {
+      ip = net.ParseIP(rawValue)
+
+      if (ip != nil) {
+        ipList[i] = ip
       }
-
-      b, err := json.Marshal(countryData)
-    	if err != nil {
-    		log.Println(err)
-    	}
-
-    	w.Write(b)
     }
+
+    countryData, err := model.LocateCountry(context, ipList)
+    if err != nil {
+      log.Println(err)
+    }
+
+    b, err := json.Marshal(countryData)
+  	if err != nil {
+  		log.Println(err)
+  	}
+
+  	w.Write(b)
   }
 }

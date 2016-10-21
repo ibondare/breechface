@@ -12,23 +12,36 @@ type CountryData struct {
   IsoCode string `json:"isoCode"`
 }
 
-func LocateCountry(db *geoip2.Reader, ipAddr net.IP) (*CountryData, error) {
+func LocateCountry(db *geoip2.Reader, ipList []net.IP) (*[]CountryData, error) {
+  result := make([]CountryData, len(ipList))
+
+  for  i, ipAddr := range ipList {
+    record, err := locateIpCountry(db, ipAddr)
+    if (err != nil) {
+      return nil, err
+    }
+
+    result[i] = record
+  }
+
+  return &result, nil
+}
+
+// Locate counrty data for a single IP address
+func locateIpCountry(db *geoip2.Reader, ipAddr net.IP) (CountryData, error) {
+  var result CountryData
 
   record, err := db.Country(ipAddr)
 
   if err != nil {
-    return nil, err
+    return result, err
   }
-
-  var countryData *CountryData;
 
   if record != nil {
-    countryData = new(CountryData)
-
-    countryData.IPAddress = ipAddr
-    countryData.Name = record.Country.Names["en"]
-    countryData.IsoCode = record.Country.IsoCode
+    result.IPAddress = ipAddr
+    result.Name = record.Country.Names["en"]
+    result.IsoCode = record.Country.IsoCode
   }
 
-  return countryData, nil
+  return result, nil
 }
