@@ -3,6 +3,8 @@ package main
 
 import (
   "encoding/json"
+  "flag"
+  "fmt"
   "github.com/ibondare/breechface/api/location/model"
   "github.com/oschwald/geoip2-golang"
   "log"
@@ -14,7 +16,12 @@ import (
 var context *geoip2.Reader
 
 func main() {
-  db, err := geoip2.Open("country.mmdb")
+  httpPort := flag.Int("port", 8080, "HTTP server port number")
+  dataPath := flag.String("data", "./country.mmdb", "Data file name/path")
+
+  flag.Parse()
+
+  db, err := geoip2.Open(*dataPath)
 
   if err != nil {
     log.Fatal(err)
@@ -23,7 +30,7 @@ func main() {
   context = db
 
   http.HandleFunc("/location/ip/", ipLocationHandler)
-	http.ListenAndServe(":8080", nil)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", *httpPort), nil))
 }
 
 // /location/ip/{ipAddr} URI handler
