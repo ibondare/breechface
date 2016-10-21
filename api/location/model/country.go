@@ -2,7 +2,6 @@
 package model
 
 import (
-  "github.com/oschwald/geoip2-golang"
   "net"
 )
 
@@ -12,11 +11,11 @@ type CountryData struct {
   IsoCode string `json:"isoCode"`
 }
 
-func LocateCountry(db *geoip2.Reader, ipList []net.IP) (*[]CountryData, error) {
+func LocateCountry(ipList []net.IP) (*[]CountryData, error) {
   result := make([]CountryData, len(ipList))
 
   for  i, ipAddr := range ipList {
-    record, err := locateIpCountry(db, ipAddr)
+    record, err := locateIpCountry(ipAddr)
     if (err != nil) {
       return nil, err
     }
@@ -28,10 +27,10 @@ func LocateCountry(db *geoip2.Reader, ipList []net.IP) (*[]CountryData, error) {
 }
 
 // Locate counrty data for a single IP address
-func locateIpCountry(db *geoip2.Reader, ipAddr net.IP) (CountryData, error) {
+func locateIpCountry(ipAddr net.IP) (CountryData, error) {
   var result CountryData
 
-  record, err := db.Country(ipAddr)
+  record, err := dataStore.Country(ipAddr)
 
   if err != nil {
     return result, err

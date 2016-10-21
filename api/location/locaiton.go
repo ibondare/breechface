@@ -6,28 +6,25 @@ import (
   "flag"
   "fmt"
   "github.com/ibondare/breechface/api/location/model"
-  "github.com/oschwald/geoip2-golang"
   "log"
   "net"
   "net/http"
   "strings"
 )
 
-var context *geoip2.Reader
-
 func main() {
   httpPort := flag.Int("port", 8080, "HTTP server port number")
-  dataPath := flag.String("data", "./country.mmdb", "Data file name/path")
+  dataPath := flag.String("data", model.DefaultPath, "Data file name/path")
 
   flag.Parse()
 
-  db, err := geoip2.Open(*dataPath)
+  err := model.Open(*dataPath)
 
   if err != nil {
     log.Fatal(err)
   }
 
-  context = db
+  defer model.Close()
 
   http.HandleFunc("/location/ip/", ipLocationHandler)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", *httpPort), nil))
@@ -55,7 +52,7 @@ func ipLocationHandler(w http.ResponseWriter, r *http.Request) {
       }
     }
 
-    countryData, err := model.LocateCountry(context, ipList)
+    countryData, err := model.LocateCountry(ipList)
     if err != nil {
       log.Println(err)
     }
